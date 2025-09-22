@@ -15,11 +15,13 @@
 
 import fastify from "fastify";
 
-import { DataBaseMemory } from "./database-memory.js";
+// import { DataBaseMemory } from "./database-memory.js";
+import { DataBasePostgres } from "./database-postgres.js";
 
 const server = fastify();
 
-const database = new DataBaseMemory();
+// const database = new DataBaseMemory();
+const database = new DataBasePostgres();
 
 server.listen({
     port: 3000,
@@ -27,7 +29,7 @@ server.listen({
 });
 
 
-server.post('/videos', (request, reply) => {
+server.post('/videos', async (request, reply) => {
 
     const { title, description, duration } = request.body;
 
@@ -43,33 +45,35 @@ server.post('/videos', (request, reply) => {
         return reply.status(400).send({ error: 'Duration is required' });
     }
 
-    database.create({
+    console.log(title, description, duration);
+
+    await database.create({
         title: title,
         description: description,
         duration: duration
     });
 
-    return reply.status(201).send();
+    return reply.status(201).send('Video created successfully');
 });
 
 
-server.get('/videos', (request, reply) => {
+server.get('/videos', async (request, reply) => {
 
     // o Campo search é opcional
     const { search } = request.query;
 
-    const videos = database.list(search);
+    const videos = await database.list(search);
 
     return reply.send(videos).status(200);
 });
 
 
-server.put('/videos/:id', (request, reply) => {
+server.put('/videos/:id', async (request, reply) => {
 
-    const { id } = request.params.id;
+    const { id } = request.params;
     const { title, description, duration } = request.body;
 
-    database.update(id, {
+    await database.update(id, {
         title,
         description,
         duration
@@ -78,11 +82,11 @@ server.put('/videos/:id', (request, reply) => {
     return reply.status(204).send();
 });
 
-server.delete('/videos/:id', (request, reply) => {
+server.delete('/videos/:id', async (request, reply) => {
 
-    const { id } = request.params.id;
+    const { id } = request.params;
 
-    database.delete(id);
+    await database.delete(id);
 
     return reply.status(204).send();
 });    
